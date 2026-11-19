@@ -2,23 +2,29 @@ package com.deliveryhub.auth.authservice.controller;
 
 import com.deliveryhub.auth.authservice.dto.request.LoginRequest;
 import com.deliveryhub.auth.authservice.dto.request.RegisterRequest;
-import com.deliveryhub.auth.authservice.dto.request.RoleRequest;
-import com.deliveryhub.auth.authservice.entity.Role;
+import com.deliveryhub.auth.authservice.dto.responce.AuthResponse;
 import com.deliveryhub.auth.authservice.service.AuthService;
+import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
+@RequiredArgsConstructor
 public class AuthController {
-    public AuthController() {}
+
+    private final AuthService authService;
+
     @PostMapping("/register")
-    public String register(@RequestBody RegisterRequest dto) {
-        return dto.toString();
+    @ResponseStatus(HttpStatus.CREATED)
+    public AuthResponse.UserResponse register(@RequestBody RegisterRequest dto) {
+        return authService.register(dto);
     }
 
     @PostMapping("/login")
-    public String login(@RequestBody LoginRequest dto) {
-        return dto.getEmail() + " " + dto.getPassword();
+    public AuthResponse.UserResponse login(@RequestBody LoginRequest dto) {
+        return authService.login(dto);
     }
 
     public void refresh(){

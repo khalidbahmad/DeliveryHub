@@ -4,18 +4,17 @@ import com.deliveryhub.auth.authservice.dto.request.LoginRequest;
 import com.deliveryhub.auth.authservice.dto.request.RoleRequest;
 import com.deliveryhub.auth.authservice.entity.Role;
 import com.deliveryhub.auth.authservice.entity.User;
-import com.deliveryhub.auth.authservice.entity.enums.RoleName;
 import com.deliveryhub.auth.authservice.repository.UserRepository;
 import com.deliveryhub.auth.authservice.repository.RoleRepository;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
-
-@AllArgsConstructor
-@NoArgsConstructor
+@Service
+@RequiredArgsConstructor
 public class AuthService {
-    private UserRepository  userRepository;
-    private static RoleRepository  roleRepository;
+
+    private final UserRepository  userRepository;
+    private final RoleRepository  roleRepository;
 
     //public void registerService(@RequestBody RegisterRequest dto){
     //    User user = new User(dto.getEmail(),dto.getFullName(), dto.getPasswordHash(), dto.getRole());
@@ -37,14 +36,15 @@ public class AuthService {
 
     }
 
-    public static Role createRole(RoleRequest name) {
-        Role role = new Role();
-        role.setName(name.getRoleName().name());
-        try {
-            return roleRepository.save(role);
-        } catch (Exception e) {
-            throw new IllegalStateException("Role already exists: " + name, e);
-        }
-    }
+    public Role createRole(RoleRequest request) {
+        String roleName = request.getRoleName().name();
 
+        if (roleRepository.findByName(roleName).isPresent()) {
+            throw new IllegalStateException("Role already exists: " + roleName);
+        }
+
+        Role role = new Role();
+        role.setName(roleName);
+        return roleRepository.save(role);
+    }
 }

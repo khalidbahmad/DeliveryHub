@@ -18,12 +18,12 @@ public class AuthController {
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
-    public AuthResponse.UserResponse register(@RequestBody RegisterRequest dto) {
+    public AuthResponse register(@RequestBody RegisterRequest dto) {
         return authService.register(dto);
     }
 
     @PostMapping("/login")
-    public AuthResponse.UserResponse login(@RequestBody LoginRequest dto) {
+    public AuthResponse login(@RequestBody LoginRequest dto) {
         return authService.login(dto);
     }
 

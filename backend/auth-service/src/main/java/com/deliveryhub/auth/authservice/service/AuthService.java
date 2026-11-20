@@ -4,6 +4,7 @@ import com.deliveryhub.auth.authservice.dto.request.LoginRequest;
 import com.deliveryhub.auth.authservice.dto.request.RegisterRequest;
 import com.deliveryhub.auth.authservice.dto.request.RoleRequest;
 import com.deliveryhub.auth.authservice.dto.responce.AuthResponse;
+import com.deliveryhub.auth.authservice.entity.RefreshToken;
 import com.deliveryhub.auth.authservice.entity.Role;
 import com.deliveryhub.auth.authservice.entity.User;
 import com.deliveryhub.auth.authservice.repository.UserRepository;
@@ -20,9 +21,12 @@ public class AuthService {
     private final UserRepository  userRepository;
     private final RoleRepository  roleRepository;
 
+    private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
+
     //private final PasswordEncoder passwordEncoder;
 
-    public AuthResponse.UserResponse register(RegisterRequest dto) {
+    public AuthResponse register(RegisterRequest dto) {
         if (userRepository.existsByEmail(dto.getEmail())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
         }
@@ -37,18 +41,35 @@ public class AuthService {
         user.setPasswordHash(dto.getPassword());
         user.setRole(role);
 
-        return toResponse(userRepository.save(user));
+        return buildResponse(userRepository.save(user), refreshTokenService.create(user));
     }
 
-    public AuthResponse.UserResponse login(LoginRequest dto) {
+    public AuthResponse login(LoginRequest dto) {
         User user = userRepository.findByEmail(dto.getEmail())
                 .filter(u -> dto.getPassword().equals(u.getPasswordHash()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email or password invalid"));
                 // .filter(u -> passwordEncoder.matches(dto.getPassword(), u.getPasswordHash()))
-        return toResponse(user);
+        return buildResponse(user, refreshTokenService.create(user));
     }
 
-    private AuthResponse.UserResponse toResponse(User u) {
+    private AuthResponse buildResponse(User user, RefreshToken refreshToken) {
+        String roleName = user.getRole().getName();
+
+        String accessToken = jwtService.generateAccessToken(
+                user.getId(), user.getEmail(), roleName);
+
+        return new AuthResponse(
+                accessToken,
+                refreshToken.getToken(),
+                "Bearer",
+                jwtService.getAccessTokenExpirationMs() / 1000,
+                new AuthResponse.UserResponse(
+                        user.getId(), user.getEmail(), user.getFullName(), roleName)
+        );
+    }
+
+    private AuthResponse.UserResponse toResponse(User u, RefreshTokenService r) {
+        r.create(u);
         return new AuthResponse.UserResponse(u.getId(), u.getEmail(), u.getFullName(), u.getRole().getName());
     }
 

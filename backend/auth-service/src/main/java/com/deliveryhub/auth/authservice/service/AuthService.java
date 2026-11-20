@@ -1,5 +1,6 @@
 package com.deliveryhub.auth.authservice.service;
 
+import com.deliveryhub.auth.authservice.config.SecurityConfig;
 import com.deliveryhub.auth.authservice.dto.request.LoginRequest;
 import com.deliveryhub.auth.authservice.dto.request.RegisterRequest;
 import com.deliveryhub.auth.authservice.dto.request.RoleRequest;
@@ -11,6 +12,7 @@ import com.deliveryhub.auth.authservice.repository.UserRepository;
 import com.deliveryhub.auth.authservice.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -24,7 +26,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
 
-    //private final PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
 
     public AuthResponse register(RegisterRequest dto) {
         if (userRepository.existsByEmail(dto.getEmail())) {
@@ -37,18 +39,21 @@ public class AuthService {
         User user = new User();
         user.setEmail(dto.getEmail());
         user.setFullName(dto.getFullName());
-        // user.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
-        user.setPasswordHash(dto.getPassword());
-        user.setRole(role);
+        user.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
 
+        //user.setPasswordHash(dto.getPassword());
+        user.setRole(role);
+        System.out.print("userRepository "+userRepository.save(user));
+        System.out.println("refreshTokenService "+refreshTokenService.create(user));
         return buildResponse(userRepository.save(user), refreshTokenService.create(user));
     }
 
     public AuthResponse login(LoginRequest dto) {
         User user = userRepository.findByEmail(dto.getEmail())
-                .filter(u -> dto.getPassword().equals(u.getPasswordHash()))
+                .filter(u -> passwordEncoder.matches(dto.getPassword(), u.getPasswordHash()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email or password invalid"));
-                // .filter(u -> passwordEncoder.matches(dto.getPassword(), u.getPasswordHash()))
+
+                // .filter(u -> dto.getPassword().equals(u.getPasswordHash()))
         return buildResponse(user, refreshTokenService.create(user));
     }
 

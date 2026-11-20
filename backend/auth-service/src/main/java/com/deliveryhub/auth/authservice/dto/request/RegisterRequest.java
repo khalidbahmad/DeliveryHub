@@ -9,5 +9,5 @@ public class RegisterRequest {
     private String email;
     private String fullName;
     private String password;
-    private RoleName role;     // enum, not the entity
+    private RoleName role;
 }
